@@ -502,8 +502,9 @@ function setPackageVersion(pkgPath, version, optionalDeps) {
 }
 
 function publishPackage(dir) {
+  const provenance = process.env.GITHUB_ACTIONS === "true" ? " --provenance" : "";
   console.log(`[sync] publishing ${path.join(ROOT, dir)}`);
-  execSync("npm publish --access public", {
+  execSync(`npm publish --access public${provenance}`, {
     cwd: path.join(ROOT, dir),
     stdio: "inherit",
   });

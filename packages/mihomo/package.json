@@ -1,6 +1,6 @@
 {
   "name": "@bytemover/mihomo",
-  "version": "1.19.30",
+  "version": "0.0.0",
   "description": "mihomo (Clash Meta) core binary for all platforms",
   "bin": {
     "mihomo": "bin/mihomo.js"
@@ -10,13 +10,13 @@
     "lib"
   ],
   "optionalDependencies": {
-    "@bytemover/mihomo-linux-amd64": "1.19.30",
-    "@bytemover/mihomo-linux-arm64": "1.19.30",
-    "@bytemover/mihomo-darwin-amd64": "1.19.30",
-    "@bytemover/mihomo-darwin-arm64": "1.19.30",
-    "@bytemover/mihomo-windows-amd64": "1.19.30",
-    "@bytemover/mihomo-windows-arm64": "1.19.30",
-    "@bytemover/mihomo-android-arm64": "1.19.30"
+    "@bytemover/mihomo-linux-amd64": "0.0.0",
+    "@bytemover/mihomo-linux-arm64": "0.0.0",
+    "@bytemover/mihomo-darwin-amd64": "0.0.0",
+    "@bytemover/mihomo-darwin-arm64": "0.0.0",
+    "@bytemover/mihomo-windows-amd64": "0.0.0",
+    "@bytemover/mihomo-windows-arm64": "0.0.0",
+    "@bytemover/mihomo-android-arm64": "0.0.0"
   },
   "publishConfig": {
     "access": "public"
@@ -29,5 +29,9 @@
     "clash-meta",
     "proxy",
     "binary"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/line486/npm-mihomo.git"
+  }
 }

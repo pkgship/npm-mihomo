@@ -1,5 +1,5 @@
 {
-  "name": "mihomo-npm",
+  "name": "npm-mihomo",
   "version": "0.0.0",
   "private": true,
   "description": "Publish mihomo (Clash Meta) core binaries to npm",
@@ -11,5 +11,9 @@
   },
   "scripts": {
     "sync": "node scripts/sync.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/line486/npm-mihomo.git"
   }
 }

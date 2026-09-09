@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  # Required to publish via npm Trusted Publishers (OIDC) instead of a token
+  id-token: write
 
 concurrency:
   group: publish-mihomo
@@ -26,6 +28,4 @@ jobs:
           registry-url: https://registry.npmjs.org/
 
       - name: Sync and publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node scripts/sync.mjs

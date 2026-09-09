@@ -1,4 +1,4 @@
-# mihomo-npm
+# npm-mihomo
 
 Automatically publishes the [mihomo](https://github.com/MetaCubeX/mihomo) (Clash Meta)
 core binaries to npm, on a daily schedule.
@@ -44,13 +44,27 @@ npx @bytemover/mihomo -v
      and tar-in-gz defensively), and verifies it looks like a valid executable.
   4. Writes the binaries into the platform packages and stamps the version into every
      `package.json` (including the main package's `optionalDependencies`).
-  5. Publishes the platform packages first, then the main package.
+  5. Publishes the platform packages first, then the main package, with provenance
+     attestation (on GitHub Actions) via npm Trusted Publishers.
 
-### One-time setup
+### One-time setup (Trusted Publishers)
 
-1. Create an npm access token (publish scope) and save it as the repository secret
-   `NPM_TOKEN` in **Settings → Secrets and variables → Actions**.
-2. Trigger the first run manually: **Actions → "Publish mihomo to npm" → Run workflow**.
+Publishing uses npm **Trusted Publishers** (OIDC), so no npm access token is needed.
+First, link this GitHub repository (`line486/npm-mihomo`) to each published package.
+On the npm website: open a package's **Settings → Access → "Add trusted publisher"** →
+connect GitHub → set Organization to `line486` and Repository to `npm-mihomo` — repeat
+for all 8 packages. Or from the CLI (logged into the `@bytemover` scope):
+
+```bash
+for pkg in mihomo mihomo-linux-amd64 mihomo-linux-arm64 mihomo-darwin-amd64 \
+           mihomo-darwin-arm64 mihomo-windows-amd64 mihomo-windows-arm64 \
+           mihomo-android-arm64; do
+  npm access set trustedpublisher "@bytemover/$pkg" GitHub line486 npm-mihomo
+done
+```
+
+The workflow's `id-token: write` permission plus `npm publish --provenance` then
+authenticate automatically on every run — no `NPM_TOKEN` secret required.
 
 ## Local development
 
