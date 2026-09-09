@@ -1,0 +1,19 @@
+{
+  "name": "@bytemover/mihomo-linux-amd64",
+  "version": "0.0.0",
+  "description": "mihomo (Clash Meta) core binary for Linux x64",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "mihomo"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/MetaCubeX/mihomo#readme"
+}
