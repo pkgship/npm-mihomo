@@ -310,10 +310,7 @@ async function isPublished(pkgName, version) {
   const { status } = await requestRaw(
     `https://registry.npmjs.org/${encodeURIComponent(pkgName)}/${version}`,
     "GET",
-    {
-      "User-Agent": "mihomo-npm",
-      Accept: "application/vnd.npm.install-v1+json",
-    },
+    { "User-Agent": "mihomo-npm" },
   );
   return status >= 200 && status < 300;
 }
@@ -517,34 +514,55 @@ async function main() {
   }
   console.log(`[sync] mihomo version: ${version}`);
 
-  if (await isPublished(MAIN.pkg, version)) {
-    console.log(
-      `[sync] ${MAIN.pkg}@${version} is already published - nothing to do`,
-    );
-    process.exit(0);
-  }
-
+  const platformPublished = new Map();
   for (const platform of PLATFORMS) {
-    await preparePlatformWithRetry(platform, version);
+    platformPublished.set(platform.pkg, await isPublished(platform.pkg, version));
   }
-
-  const deps = Object.fromEntries(PLATFORMS.map((p) => [p.pkg, version]));
-  setPackageVersion(MAIN.dir, version, deps);
-  for (const platform of PLATFORMS) {
-    setPackageVersion(platform.dir, version);
-  }
+  const mainPublished = await isPublished(MAIN.pkg, version);
 
   if (noPublish) {
+    for (const platform of PLATFORMS) {
+      await preparePlatformWithRetry(platform, version);
+    }
+    const deps = Object.fromEntries(PLATFORMS.map((p) => [p.pkg, version]));
+    setPackageVersion(MAIN.dir, version, deps);
+    for (const platform of PLATFORMS) {
+      setPackageVersion(platform.dir, version);
+    }
     console.log(
       `[sync] prepared binaries for ${version} (publish skipped due to --no-publish)`,
     );
     return;
   }
 
+  if (mainPublished && [...platformPublished.values()].every(Boolean)) {
+    console.log(
+      `[sync] ${MAIN.pkg}@${version} and all platform packages are already published - nothing to do`,
+    );
+    process.exit(0);
+  }
+
+  setPackageVersion(MAIN.dir, version);
   for (const platform of PLATFORMS) {
+    if (platformPublished.get(platform.pkg)) {
+      console.log(`[sync] ${platform.pkg}@${version} already published - skipping`);
+      continue;
+    }
+    await preparePlatformWithRetry(platform, version);
+    setPackageVersion(platform.dir, version);
     publishPackage(platform.dir);
   }
-  publishPackage(MAIN.dir);
+
+  setPackageVersion(
+    MAIN.dir,
+    version,
+    Object.fromEntries(PLATFORMS.map((p) => [p.pkg, version])),
+  );
+  if (mainPublished) {
+    console.log(`[sync] ${MAIN.pkg}@${version} already published - skipping`);
+  } else {
+    publishPackage(MAIN.dir);
+  }
   console.log(`[sync] done: published ${MAIN.pkg}@${version}`);
 }
 
