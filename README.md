@@ -5,16 +5,16 @@ core binaries to npm, on a daily schedule.
 
 ## Published packages
 
-| Package | Platform |
-| --- | --- |
-| `@bytemover/mihomo` | Installer/meta package - auto-selects the right platform package |
-| `@bytemover/mihomo-linux-amd64` | Linux x64 |
-| `@bytemover/mihomo-linux-arm64` | Linux arm64 |
-| `@bytemover/mihomo-darwin-amd64` | macOS x64 |
-| `@bytemover/mihomo-darwin-arm64` | macOS arm64 |
-| `@bytemover/mihomo-windows-amd64` | Windows x64 |
-| `@bytemover/mihomo-windows-arm64` | Windows arm64 |
-| `@bytemover/mihomo-android-arm64` | Android arm64-v8 |
+| Package                           | Platform                                                         |
+| --------------------------------- | ---------------------------------------------------------------- |
+| `@bytemover/mihomo`               | Installer/meta package - auto-selects the right platform package |
+| `@bytemover/mihomo-linux-amd64`   | Linux x64                                                        |
+| `@bytemover/mihomo-linux-arm64`   | Linux arm64                                                      |
+| `@bytemover/mihomo-darwin-amd64`  | macOS x64                                                        |
+| `@bytemover/mihomo-darwin-arm64`  | macOS arm64                                                      |
+| `@bytemover/mihomo-windows-amd64` | Windows x64                                                      |
+| `@bytemover/mihomo-windows-arm64` | Windows arm64                                                    |
+| `@bytemover/mihomo-android-arm64` | Android arm64-v8                                                 |
 
 The main package lists every platform package under `optionalDependencies`, so npm
 downloads only the binary matching the install environment. The `mihomo` command then
