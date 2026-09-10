@@ -1,6 +1,6 @@
 {
   "name": "@pkgship/mihomo-linux-arm64",
-  "version": "0.0.0",
+  "version": "1.19.30",
   "description": "mihomo (Clash Meta) core binary for Linux arm64",
   "os": [
     "linux"

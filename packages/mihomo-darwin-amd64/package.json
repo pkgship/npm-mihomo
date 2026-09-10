@@ -1,6 +1,6 @@
 {
   "name": "@pkgship/mihomo-darwin-amd64",
-  "version": "0.0.0",
+  "version": "1.19.30",
   "description": "mihomo (Clash Meta) core binary for macOS x64",
   "os": [
     "darwin"
