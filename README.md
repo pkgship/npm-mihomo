@@ -7,14 +7,14 @@ core binaries to npm, on a daily schedule.
 
 | Package                           | Platform                                                         |
 | --------------------------------- | ---------------------------------------------------------------- |
-| `@bytemover/mihomo`               | Installer/meta package - auto-selects the right platform package |
-| `@bytemover/mihomo-linux-amd64`   | Linux x64                                                        |
-| `@bytemover/mihomo-linux-arm64`   | Linux arm64                                                      |
-| `@bytemover/mihomo-darwin-amd64`  | macOS x64                                                        |
-| `@bytemover/mihomo-darwin-arm64`  | macOS arm64                                                      |
-| `@bytemover/mihomo-windows-amd64` | Windows x64                                                      |
-| `@bytemover/mihomo-windows-arm64` | Windows arm64                                                    |
-| `@bytemover/mihomo-android-arm64` | Android arm64-v8                                                 |
+| `@pkgship/mihomo`               | Installer/meta package - auto-selects the right platform package |
+| `@pkgship/mihomo-linux-amd64`   | Linux x64                                                        |
+| `@pkgship/mihomo-linux-arm64`   | Linux arm64                                                      |
+| `@pkgship/mihomo-darwin-amd64`  | macOS x64                                                        |
+| `@pkgship/mihomo-darwin-arm64`  | macOS arm64                                                      |
+| `@pkgship/mihomo-windows-amd64` | Windows x64                                                      |
+| `@pkgship/mihomo-windows-arm64` | Windows arm64                                                    |
+| `@pkgship/mihomo-android-arm64` | Android arm64-v8                                                 |
 
 The main package lists every platform package under `optionalDependencies`, so npm
 downloads only the binary matching the install environment. The `mihomo` command then
@@ -23,14 +23,14 @@ spawns it directly.
 ## Usage
 
 ```bash
-npm install -g @bytemover/mihomo
+npm install -g @pkgship/mihomo
 mihomo -v
 ```
 
 Or run without installing:
 
 ```bash
-npx @bytemover/mihomo -v
+npx @pkgship/mihomo -v
 ```
 
 ## How publishing works
@@ -50,16 +50,16 @@ npx @bytemover/mihomo -v
 ### One-time setup (Trusted Publishers)
 
 Publishing uses npm **Trusted Publishers** (OIDC), so no npm access token is needed.
-First, link this GitHub repository (`line486/npm-mihomo`) to each published package.
+First, link this GitHub repository (`pkgship/npm-mihomo`) to each published package.
 On the npm website: open a package's **Settings → Access → "Add trusted publisher"** →
-connect GitHub → set Organization to `line486` and Repository to `npm-mihomo` — repeat
-for all 8 packages. Or from the CLI (logged into the `@bytemover` scope):
+connect GitHub → set Organization to `pkgship` and Repository to `npm-mihomo` — repeat
+for all 8 packages. Or from the CLI (logged into the `@pkgship` scope):
 
 ```bash
 for pkg in mihomo mihomo-linux-amd64 mihomo-linux-arm64 mihomo-darwin-amd64 \
            mihomo-darwin-arm64 mihomo-windows-amd64 mihomo-windows-arm64 \
            mihomo-android-arm64; do
-  npm access set trustedpublisher "@bytemover/$pkg" GitHub line486 npm-mihomo
+  npm access set trustedpublisher "@pkgship/$pkg" GitHub pkgship npm-mihomo
 done
 ```
 

@@ -1,7 +1,7 @@
 [
   {
     "dir": "packages/mihomo-linux-amd64",
-    "pkg": "@bytemover/mihomo-linux-amd64",
+    "pkg": "@pkgship/mihomo-linux-amd64",
     "asset": "mihomo-linux-amd64-v{VERSION}.gz",
     "binary": "mihomo",
     "os": ["linux"],
@@ -9,7 +9,7 @@
   },
   {
     "dir": "packages/mihomo-linux-arm64",
-    "pkg": "@bytemover/mihomo-linux-arm64",
+    "pkg": "@pkgship/mihomo-linux-arm64",
     "asset": "mihomo-linux-arm64-v{VERSION}.gz",
     "binary": "mihomo",
     "os": ["linux"],
@@ -17,7 +17,7 @@
   },
   {
     "dir": "packages/mihomo-darwin-amd64",
-    "pkg": "@bytemover/mihomo-darwin-amd64",
+    "pkg": "@pkgship/mihomo-darwin-amd64",
     "asset": "mihomo-darwin-amd64-v{VERSION}.gz",
     "binary": "mihomo",
     "os": ["darwin"],
@@ -25,7 +25,7 @@
   },
   {
     "dir": "packages/mihomo-darwin-arm64",
-    "pkg": "@bytemover/mihomo-darwin-arm64",
+    "pkg": "@pkgship/mihomo-darwin-arm64",
     "asset": "mihomo-darwin-arm64-v{VERSION}.gz",
     "binary": "mihomo",
     "os": ["darwin"],
@@ -33,7 +33,7 @@
   },
   {
     "dir": "packages/mihomo-windows-amd64",
-    "pkg": "@bytemover/mihomo-windows-amd64",
+    "pkg": "@pkgship/mihomo-windows-amd64",
     "asset": "mihomo-windows-amd64-v{VERSION}.zip",
     "binary": "mihomo.exe",
     "os": ["win32"],
@@ -41,7 +41,7 @@
   },
   {
     "dir": "packages/mihomo-windows-arm64",
-    "pkg": "@bytemover/mihomo-windows-arm64",
+    "pkg": "@pkgship/mihomo-windows-arm64",
     "asset": "mihomo-windows-arm64-v{VERSION}.zip",
     "binary": "mihomo.exe",
     "os": ["win32"],
@@ -49,7 +49,7 @@
   },
   {
     "dir": "packages/mihomo-android-arm64",
-    "pkg": "@bytemover/mihomo-android-arm64",
+    "pkg": "@pkgship/mihomo-android-arm64",
     "asset": "mihomo-android-arm64-v8-v{VERSION}.gz",
     "binary": "mihomo",
     "os": ["android"],

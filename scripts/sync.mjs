@@ -11,7 +11,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GITHUB_REPO = "MetaCubeX/mihomo";
 const MAIN = {
   dir: "packages/mihomo",
-  pkg: "@bytemover/mihomo",
+  pkg: "@pkgship/mihomo",
 };
 const PLATFORMS = JSON.parse(
   readFileSync(path.join(ROOT, "scripts", "platforms.json"), "utf8"),

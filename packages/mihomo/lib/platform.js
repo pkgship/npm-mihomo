@@ -3,16 +3,16 @@
 const path = require("path");
 
 const SUPPORTED_PLATFORMS = {
-  "linux-x64": { pkg: "@bytemover/mihomo-linux-amd64", binary: "mihomo" },
-  "linux-arm64": { pkg: "@bytemover/mihomo-linux-arm64", binary: "mihomo" },
-  "darwin-x64": { pkg: "@bytemover/mihomo-darwin-amd64", binary: "mihomo" },
-  "darwin-arm64": { pkg: "@bytemover/mihomo-darwin-arm64", binary: "mihomo" },
-  "win32-x64": { pkg: "@bytemover/mihomo-windows-amd64", binary: "mihomo.exe" },
+  "linux-x64": { pkg: "@pkgship/mihomo-linux-amd64", binary: "mihomo" },
+  "linux-arm64": { pkg: "@pkgship/mihomo-linux-arm64", binary: "mihomo" },
+  "darwin-x64": { pkg: "@pkgship/mihomo-darwin-amd64", binary: "mihomo" },
+  "darwin-arm64": { pkg: "@pkgship/mihomo-darwin-arm64", binary: "mihomo" },
+  "win32-x64": { pkg: "@pkgship/mihomo-windows-amd64", binary: "mihomo.exe" },
   "win32-arm64": {
-    pkg: "@bytemover/mihomo-windows-arm64",
+    pkg: "@pkgship/mihomo-windows-arm64",
     binary: "mihomo.exe",
   },
-  "android-arm64": { pkg: "@bytemover/mihomo-android-arm64", binary: "mihomo" },
+  "android-arm64": { pkg: "@pkgship/mihomo-android-arm64", binary: "mihomo" },
 };
 
 function resolveBinary() {

@@ -1,11 +1,11 @@
-# @bytemover/mihomo
+# @pkgship/mihomo
 
 [mihomo](https://github.com/MetaCubeX/mihomo) (Clash Meta) core binary, distributed via npm.
 
 ## Install
 
 ```bash
-npm install -g @bytemover/mihomo
+npm install -g @pkgship/mihomo
 ```
 
 npm automatically installs the correct binary package for your platform
@@ -21,18 +21,18 @@ mihomo -d ./config-dir
 You can also use it without installing:
 
 ```bash
-npx @bytemover/mihomo -v
+npx @pkgship/mihomo -v
 ```
 
 ## How it works
 
-- [@bytemover/mihomo-linux-amd64](...),
-  [@bytemover/mihomo-linux-arm64](...),
-  [@bytemover/mihomo-darwin-amd64](...),
-  [@bytemover/mihomo-darwin-arm64](...),
-  [@bytemover/mihomo-windows-amd64](...),
-  [@bytemover/mihomo-windows-arm64](...),
-  [@bytemover/mihomo-android-arm64](...) each contain the raw mihomo binary.
+- [@pkgship/mihomo-linux-amd64](...),
+  [@pkgship/mihomo-linux-arm64](...),
+  [@pkgship/mihomo-darwin-amd64](...),
+  [@pkgship/mihomo-darwin-arm64](...),
+  [@pkgship/mihomo-windows-amd64](...),
+  [@pkgship/mihomo-windows-arm64](...),
+  [@pkgship/mihomo-android-arm64](...) each contain the raw mihomo binary.
 - This package depends on all of them as **optional** dependencies, so the package
   manager only downloads the one matching the current platform.
 

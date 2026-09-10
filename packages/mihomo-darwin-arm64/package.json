@@ -1,5 +1,5 @@
 {
-  "name": "@bytemover/mihomo-darwin-arm64",
+  "name": "@pkgship/mihomo-darwin-arm64",
   "version": "0.0.0",
   "description": "mihomo (Clash Meta) core binary for macOS arm64",
   "os": [
@@ -18,6 +18,6 @@
   "homepage": "https://github.com/MetaCubeX/mihomo#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/line486/npm-mihomo.git"
+    "url": "git+https://github.com/pkgship/npm-mihomo.git"
   }
 }
