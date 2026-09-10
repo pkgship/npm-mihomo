@@ -1,30 +1,69 @@
 #!/usr/bin/env node
-import { execSync } from "node:child_process";
-import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { connect as netConnect } from "node:net";
-import path from "node:path";
-import { connect as tlsConnect } from "node:tls";
-import { fileURLToPath } from "node:url";
-import { gunzipSync, inflateRawSync } from "node:zlib";
+"use strict";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Sync the npm packages for one mihomo release: bring the upstream release and
+// the registry together into a tree that is ready to publish.
+//
+//   @pkgship/mihomo-<platform>   the raw binary for one platform
+//   @pkgship/mihomo              the shim plus one optionalDependency per platform
+//
+// A version that is already on the registry is left alone and its binary is
+// never downloaded again, so a partially published release can be resumed by
+// re-running this. The binaries come from the upstream GitHub release, so no
+// per-platform package is committed to the repository; the tree is written to
+// <out> and listed in <out>/.packages as tab separated "<directory>\t<name>\t
+// <version>" lines, in publish order (platform packages first, so the root
+// package never briefly points at packages that do not exist yet). Publishing
+// is the workflow's job.
+//
+//   node scripts/sync.js [--version <version>] [--out publish]
+
+const {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} = require("node:fs");
+const { connect: netConnect } = require("node:net");
+const path = require("node:path");
+const { connect: tlsConnect } = require("node:tls");
+const { gunzipSync, inflateRawSync } = require("node:zlib");
+
+const platforms = require("../lib/platforms.js");
+
+const ROOT = path.join(__dirname, "..");
+const SCOPE = "@pkgship";
 const GITHUB_REPO = "MetaCubeX/mihomo";
-const MAIN = {
-  dir: "packages/mihomo",
-  pkg: "@pkgship/mihomo",
+const LICENSE = "GPL-3.0-or-later";
+const HOMEPAGE = "https://github.com/MetaCubeX/mihomo#readme";
+const REPOSITORY = {
+  type: "git",
+  url: "git+https://github.com/pkgship/npm-mihomo.git",
 };
-const PLATFORMS = JSON.parse(
-  readFileSync(path.join(ROOT, "scripts", "platforms.json"), "utf8"),
-);
-
-const noPublish = process.argv.includes("--no-publish");
-const versionIndex = process.argv.indexOf("--version");
-const versionOverride =
-  versionIndex >= 0 ? process.argv[versionIndex + 1] : undefined;
+// Copied from the repository into the root package as-is.
+const SHIPPED = ["bin/mihomo.js", "lib/platforms.js"];
 
 const SIG_EOCD = 0x06054b50;
 const SIG_CENTRAL = 0x02014b50;
 const SIG_LOCAL = 0x04034b50;
+
+const options = { version: null, out: "publish" };
+const argv = process.argv.slice(2);
+for (let i = 0; i < argv.length; i += 2) {
+  const key = argv[i].replace(/^--/, "");
+  if (!(key in options)) {
+    console.error(`error: unknown option ${argv[i]}`);
+    process.exit(1);
+  }
+  if (i + 1 >= argv.length) {
+    console.error(`error: ${argv[i]} needs a value`);
+    process.exit(1);
+  }
+  options[key] = argv[i + 1];
+}
 
 function u16(buf, off) {
   return buf.readUInt16LE(off);
@@ -34,7 +73,7 @@ function u32(buf, off) {
   return buf.readUInt32LE(off);
 }
 
-export function isProxiedHost(hostname) {
+function isProxiedHost(hostname) {
   const noProxy = process.env.NO_PROXY || process.env.no_proxy || "";
   const entries = noProxy
     .split(",")
@@ -57,7 +96,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function isRetryable(err) {
   const msg = String(err?.message || err?.code || "");
-  return /ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|socket hang up|disconnect|reset by peer|timeout|closed|TLS|tunnel|zip:|tar:|executable|central directory|local file header|compression method|incomplete response|HTTP 5\d\d/i.test(
+  return /ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|socket hang up|disconnect|reset by peer|timeout|closed|TLS|tunnel|zip:|executable|central directory|local file header|compression method|incomplete response|HTTP 5\d\d/i.test(
     msg,
   );
 }
@@ -173,7 +212,7 @@ async function openSocket(hostname, port, useTls) {
   return tlsSocket;
 }
 
-export function dechunk(buf) {
+function dechunk(buf) {
   const parts = [];
   let off = 0;
   while (off < buf.length) {
@@ -190,7 +229,7 @@ export function dechunk(buf) {
   return Buffer.concat(parts);
 }
 
-export function parseRawResponse(buf) {
+function parseRawResponse(buf) {
   const headEnd = buf.indexOf("\r\n\r\n");
   const head = buf.subarray(0, headEnd).toString("latin1");
   const lines = head.split("\r\n");
@@ -210,7 +249,7 @@ export function parseRawResponse(buf) {
   return { status, headers, body };
 }
 
-export async function requestRaw(
+async function requestRaw(
   targetUrl,
   method,
   requestHeaders,
@@ -394,32 +433,6 @@ function extractFromZip(buf) {
   return readZipEntry(buf, target);
 }
 
-function extractFromTarIfNeeded(buf) {
-  if (buf.length < 512 || buf.toString("ascii", 257, 262) !== "ustar")
-    return buf;
-  let off = 0;
-  while (off + 512 <= buf.length) {
-    const name = buf.toString("utf8", off, off + 100).replace(/\0.*$/, "");
-    if (!name) break;
-    const sizeOct =
-      buf
-        .toString("utf8", off + 124, off + 136)
-        .replace(/\0.*$/, "")
-        .trim() || "0";
-    const size = parseInt(sizeOct, 8) || 0;
-    const type = String.fromCharCode(buf[off + 156]);
-    const data = buf.subarray(off + 512, off + 512 + size);
-    if (
-      (type === "0" || type === "\0") &&
-      path.posix.basename(name) === "mihomo"
-    ) {
-      return Buffer.from(data);
-    }
-    off += 512 + Math.ceil(size / 512) * 512;
-  }
-  throw new Error("tar: mihomo binary not found in archive");
-}
-
 function isExecutable(buf) {
   if (buf.length < 4) return false;
   if (buf[0] === 0x7f && buf[1] === 0x45 && buf[2] === 0x4c && buf[3] === 0x46)
@@ -435,146 +448,167 @@ function isExecutable(buf) {
 }
 
 function decompress(raw, assetName) {
-  let buf = raw;
-  if (assetName.endsWith(".gz")) {
-    buf = gunzipSync(raw);
-  } else if (assetName.endsWith(".zip")) {
-    buf = extractFromZip(raw);
-  }
-  return extractFromTarIfNeeded(buf);
+  if (assetName.endsWith(".zip")) return extractFromZip(raw);
+  return gunzipSync(raw);
 }
 
-async function preparePlatform(platform, version) {
-  const binPath = path.join(ROOT, platform.dir, platform.binary);
-  const markerPath = path.join(ROOT, platform.dir, ".mihomo-version");
-  if (
-    existsSync(binPath) &&
-    existsSync(markerPath) &&
-    readFileSync(markerPath, "utf8").trim() === version &&
-    isExecutable(readFileSync(binPath))
-  ) {
-    console.log(
-      `[sync] ${platform.binary} already present for ${version} - skipping`,
-    );
-    return;
+function writeJson(file, data) {
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+function copy(from, to, mode) {
+  mkdirSync(path.dirname(to), { recursive: true });
+  copyFileSync(from, to);
+  if (mode !== undefined) chmodSync(to, mode);
+}
+
+// One platform package: the raw binary, an index.js that exports its path, and
+// the manifest npm matches against the install environment.
+async function buildPlatform(id, meta, version, out) {
+  const asset = meta.asset.replace("{VERSION}", version);
+  const binary = meta.os === "win32" ? "mihomo.exe" : "mihomo";
+  const dir = path.join(out, SCOPE, `mihomo-${id}`);
+
+  console.log(`[sync] downloading ${asset}`);
+  const payload = decompress(await fetchAsset(version, asset), asset);
+  if (!isExecutable(payload)) {
+    throw new Error(`extracted file is not a valid executable: ${asset}`);
   }
-  const assetName = platform.asset.replace("{VERSION}", version);
-  console.log(`[sync] downloading ${assetName}`);
-  const raw = await fetchAsset(version, assetName);
-  const binary = decompress(raw, assetName);
-  if (!isExecutable(binary)) {
-    throw new Error(`Extracted file is not a valid executable: ${assetName}`);
-  }
-  writeFileSync(binPath, binary);
-  chmodSync(binPath, 0o755);
-  writeFileSync(markerPath, version + "\n");
-  console.log(
-    `[sync] wrote ${platform.binary} (${(binary.length / 1024 / 1024).toFixed(1)} MiB)`,
+
+  writeJson(path.join(dir, "package.json"), {
+    name: `${SCOPE}/mihomo-${id}`,
+    version,
+    description: `mihomo (Clash Meta) core binary for ${id}`,
+    license: LICENSE,
+    homepage: HOMEPAGE,
+    repository: REPOSITORY,
+    os: [meta.os],
+    cpu: [meta.cpu],
+    main: "index.js",
+    files: ["bin", "index.js"],
+  });
+
+  writeFileSync(
+    path.join(dir, "index.js"),
+    "'use strict';\n\n// The path of this platform's mihomo binary.\n" +
+      `module.exports = require('node:path').join(__dirname, 'bin', '${binary}');\n`,
   );
+
+  writeFileSync(
+    path.join(dir, "README.md"),
+    `# ${SCOPE}/mihomo-${id}\n\n` +
+      `Contains the [mihomo](https://github.com/MetaCubeX/mihomo) core binary for \`${id}\`.\n\n` +
+      "Installed automatically as an optional dependency of `@pkgship/mihomo`. Do not install directly.\n",
+  );
+
+  // Downloaded assets do not carry the executable bit, and npm publishes
+  // exactly the modes it finds on disk.
+  const file = path.join(dir, "bin", binary);
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, payload);
+  chmodSync(file, 0o755);
+
+  console.log(
+    `[sync] wrote ${SCOPE}/mihomo-${id} (${(payload.length / 1024 / 1024).toFixed(1)} MiB)`,
+  );
+  return dir;
 }
 
-async function preparePlatformWithRetry(platform, version) {
+async function buildPlatformWithRetry(id, meta, version, out) {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await preparePlatform(platform, version);
+      return await buildPlatform(id, meta, version, out);
     } catch (err) {
       if (attempt >= 3 || !isRetryable(err)) throw err;
       const msg = String(err?.message || err?.code || "");
       console.log(
-        `[sync] retrying ${platform.dir} (${attempt + 1}/3) after error: ${msg}`,
+        `[sync] retrying ${id} (${attempt + 1}/3) after error: ${msg}`,
       );
       await sleep(attempt * 1000);
     }
   }
 }
 
-function setPackageVersion(pkgPath, version, optionalDeps) {
-  const pkgFile = path.join(ROOT, pkgPath, "package.json");
-  const pkg = JSON.parse(readFileSync(pkgFile, "utf8"));
-  pkg.version = version;
-  if (optionalDeps) {
-    pkg.optionalDependencies = { ...pkg.optionalDependencies, ...optionalDeps };
-  }
-  writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + "\n");
-}
-
-function publishPackage(dir) {
-  const provenance = process.env.GITHUB_ACTIONS === "true" ? " --provenance" : "";
-  console.log(`[sync] publishing ${path.join(ROOT, dir)}`);
-  execSync(`npm publish --access public${provenance}`, {
-    cwd: path.join(ROOT, dir),
-    stdio: "inherit",
-  });
-}
-
 async function main() {
-  const version = versionOverride ?? (await fetchLatestVersion());
+  const version = options.version ?? (await fetchLatestVersion());
   if (!/^\d+\.\d+\.\d+/.test(version)) {
-    throw new Error(`Unexpected version string: ${version}`);
+    throw new Error(`unexpected version string: ${version}`);
   }
+
+  const out = path.resolve(options.out);
+  rmSync(out, { recursive: true, force: true });
+  mkdirSync(out, { recursive: true });
+
   console.log(`[sync] mihomo version: ${version}`);
 
-  const platformPublished = new Map();
-  for (const platform of PLATFORMS) {
-    platformPublished.set(platform.pkg, await isPublished(platform.pkg, version));
-  }
-  const mainPublished = await isPublished(MAIN.pkg, version);
-
-  if (noPublish) {
-    for (const platform of PLATFORMS) {
-      await preparePlatformWithRetry(platform, version);
-    }
-    const deps = Object.fromEntries(PLATFORMS.map((p) => [p.pkg, version]));
-    setPackageVersion(MAIN.dir, version, deps);
-    for (const platform of PLATFORMS) {
-      setPackageVersion(platform.dir, version);
-    }
-    console.log(
-      `[sync] prepared binaries for ${version} (publish skipped due to --no-publish)`,
-    );
-    return;
-  }
-
-  if (mainPublished && [...platformPublished.values()].every(Boolean)) {
-    console.log(
-      `[sync] ${MAIN.pkg}@${version} and all platform packages are already published - nothing to do`,
-    );
-    process.exit(0);
-  }
-
-  setPackageVersion(MAIN.dir, version);
-  for (const platform of PLATFORMS) {
-    if (platformPublished.get(platform.pkg)) {
-      console.log(`[sync] ${platform.pkg}@${version} already published - skipping`);
+  const entries = [];
+  for (const [id, meta] of Object.entries(platforms)) {
+    const name = `${SCOPE}/mihomo-${id}`;
+    if (await isPublished(name, version)) {
+      console.log(`[sync] ${name}@${version} already published - skipping`);
       continue;
     }
-    await preparePlatformWithRetry(platform, version);
-    setPackageVersion(platform.dir, version);
-    publishPackage(platform.dir);
+    entries.push([name, await buildPlatformWithRetry(id, meta, version, out)]);
   }
 
-  setPackageVersion(
-    MAIN.dir,
-    version,
-    Object.fromEntries(PLATFORMS.map((p) => [p.pkg, version])),
+  const manifest = JSON.parse(
+    readFileSync(path.join(ROOT, "package.json"), "utf8"),
   );
-  if (mainPublished) {
-    console.log(`[sync] ${MAIN.pkg}@${version} already published - skipping`);
-  } else {
-    publishPackage(MAIN.dir);
+  const expected = Object.keys(platforms)
+    .map((id) => `${SCOPE}/mihomo-${id}`)
+    .sort();
+  const declared = Object.keys(manifest.optionalDependencies || {}).sort();
+  if (expected.join() !== declared.join()) {
+    throw new Error(
+      "package.json optionalDependencies no longer match lib/platforms.js",
+    );
   }
-  console.log(`[sync] done: published ${MAIN.pkg}@${version}`);
+
+  if (await isPublished(manifest.name, version)) {
+    console.log(
+      `[sync] ${manifest.name}@${version} already published - skipping`,
+    );
+  } else {
+    manifest.version = version;
+    for (const name of Object.keys(manifest.optionalDependencies)) {
+      manifest.optionalDependencies[name] = version;
+    }
+
+    const root = path.join(out, SCOPE, "mihomo");
+    for (const file of SHIPPED) {
+      copy(path.join(ROOT, file), path.join(root, file));
+    }
+    copy(path.join(ROOT, "README.md"), path.join(root, "README.md"));
+    writeJson(path.join(root, "package.json"), manifest);
+    entries.push([manifest.name, root]);
+  }
+
+  // Written even when there is nothing to publish, so the workflow can read it
+  // unconditionally.
+  writeFileSync(
+    path.join(out, ".packages"),
+    entries.length
+      ? `${entries
+          .map(([name, dir]) =>
+            [
+              path.relative(out, dir).split(path.sep).join("/"),
+              name,
+              version,
+            ].join("\t"),
+          )
+          .join("\n")}\n`
+      : "",
+  );
+
+  console.log(
+    entries.length
+      ? `[sync] mihomo ${version}: prepared ${entries.length} packages in ${path.relative(process.cwd(), out)}`
+      : `[sync] mihomo ${version} is already on the registry - nothing to do`,
+  );
 }
 
-const isMain =
-  process.argv[1] &&
-  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-
-if (isMain) {
-  main().catch((err) => {
-    console.error(`[sync] failed: ${err.message}`);
-    process.exit(1);
-  });
-}
-
-export { main };
+main().catch((err) => {
+  console.error(`[sync] failed: ${err.message}`);
+  process.exit(1);
+});

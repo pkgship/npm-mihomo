@@ -1,6 +1,4 @@
 node_modules/
 *.tgz
 .tmp/
-packages/*/mihomo
-packages/*/mihomo.exe
-packages/*/.mihomo-version
+publish/

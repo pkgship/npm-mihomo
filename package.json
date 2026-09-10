@@ -1,19 +1,40 @@
 {
-  "name": "npm-mihomo",
+  "name": "@pkgship/mihomo",
   "version": "0.0.0",
-  "private": true,
-  "description": "Publish mihomo (Clash Meta) core binaries to npm",
-  "workspaces": [
-    "packages/*"
+  "description": "mihomo (Clash Meta) core binary for all platforms",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/MetaCubeX/mihomo#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pkgship/npm-mihomo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pkgship/npm-mihomo/issues"
+  },
+  "bin": {
+    "mihomo": "bin/mihomo.js"
+  },
+  "files": [
+    "bin",
+    "lib"
   ],
   "engines": {
     "node": ">=18"
   },
-  "scripts": {
-    "sync": "node scripts/sync.mjs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pkgship/npm-mihomo.git"
+  "keywords": [
+    "mihomo",
+    "clash",
+    "clash-meta",
+    "proxy",
+    "binary"
+  ],
+  "optionalDependencies": {
+    "@pkgship/mihomo-linux-amd64": "0.0.0",
+    "@pkgship/mihomo-linux-arm64": "0.0.0",
+    "@pkgship/mihomo-darwin-amd64": "0.0.0",
+    "@pkgship/mihomo-darwin-arm64": "0.0.0",
+    "@pkgship/mihomo-windows-amd64": "0.0.0",
+    "@pkgship/mihomo-windows-arm64": "0.0.0",
+    "@pkgship/mihomo-android-arm64": "0.0.0"
   }
 }
