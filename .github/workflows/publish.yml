@@ -29,7 +29,11 @@ jobs:
 
       # Skips anything already on the registry, binaries included, so a
       # partially published release is resumed by re-running this job.
+      # Authenticated so the release lookup uses the 5000/hour quota instead of
+      # the anonymous 60/hour one (which returns HTTP 403 once exhausted).
       - name: Sync packages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/sync.js
 
       # The platform packages come first, and a version that appeared on the

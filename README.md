@@ -96,6 +96,11 @@ The result lands in `publish/`; nothing outside it is touched. Set
 `MIHOMO_ASSET_DIR=<dir>` to read the release assets from a local directory instead of
 downloading them.
 
+The release lookup uses the GitHub API. Unauthenticated it is capped at
+60 requests/hour per IP (returns HTTP 403 once exhausted); a token raises this to
+5000. The token is read from `GITHUB_TOKEN`/`GH_TOKEN`, else discovered from the
+local `gh` CLI (`gh auth login`), so CI and local runs both authenticate.
+
 ## License
 
 The mihomo binaries are built and distributed by the upstream project

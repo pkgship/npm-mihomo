@@ -27,6 +27,7 @@ const {
   rmSync,
   writeFileSync,
 } = require("node:fs");
+const { execFileSync } = require("node:child_process");
 const { connect: netConnect } = require("node:net");
 const path = require("node:path");
 const { connect: tlsConnect } = require("node:tls");
@@ -333,14 +334,50 @@ async function requestOnce(targetUrl, method, requestHeaders, maxRedirects) {
   throw new Error(`Too many redirects for ${targetUrl}`);
 }
 
+// The GitHub release API is rate-limited to 60 requests/hour per IP when
+// unauthenticated; a token raises that to 5000. The token is taken from
+// GITHUB_TOKEN / GH_TOKEN, else discovered from the local `gh` CLI.
+let tokenCache;
+function githubToken() {
+  if (tokenCache !== undefined) return tokenCache;
+  const fromEnv = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  if (fromEnv) {
+    tokenCache = fromEnv;
+    return tokenCache;
+  }
+  try {
+    const out = execFileSync("gh", ["auth", "token"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    tokenCache = out || null;
+  } catch {
+    tokenCache = null;
+  }
+  return tokenCache;
+}
+
+function githubAuthHeaders() {
+  const token = githubToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function fetchLatestVersion() {
   const { status, body } = await requestRaw(
     `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
     "GET",
-    { "User-Agent": "mihomo-npm", Accept: "application/vnd.github+json" },
+    {
+      "User-Agent": "mihomo-npm",
+      Accept: "application/vnd.github+json",
+      ...githubAuthHeaders(),
+    },
   );
   if (status >= 400) {
-    throw new Error(`HTTP ${status} while fetching latest release`);
+    const reason =
+      status === 403 || status === 429
+        ? `${status} (GitHub API rate limit; set GITHUB_TOKEN/GH_TOKEN or run \`gh auth login\`)`
+        : String(status);
+    throw new Error(`HTTP ${reason} while fetching latest release`);
   }
   return String(JSON.parse(body.toString("utf8")).tag_name).replace(/^v/, "");
 }
